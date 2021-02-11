@@ -15,13 +15,13 @@ from nodevectors.embedders import BaseNodeEmbedder
 
 class Node2Vec(BaseNodeEmbedder):
     def __init__(
-        self, 
-        n_components=32,
-        walklen=30, 
+        self,
+        n_components=128,
+        walklen=30,
         epochs=20,
         return_weight=1.,
         neighbor_weight=1.,
-        threads=0, 
+        threads=0,
         keep_walks=False,
         verbose=True,
         w2vparams={"window":10, "negative":5, "iter":10,
@@ -40,14 +40,14 @@ class Node2Vec(BaseNodeEmbedder):
             This should be set here rather than in the w2vparams arguments
         return_weight : float in (0, inf]
             Weight on the probability of returning to node coming from
-            Having this higher tends the walks to be 
+            Having this higher tends the walks to be
             more like a Breadth-First Search.
             Having this very high  (> 2) makes search very local.
             Equal to the inverse of p in the Node2Vec paper.
         explore_weight : float in (0, inf]
             Weight on the probability of visitng a neighbor node
             to the one we're coming from in the random walk
-            Having this higher tends the walks to be 
+            Having this higher tends the walks to be
             more like a Depth-First Search.
             Having this very high makes search more outward.
             Having this very low makes search very local.
@@ -88,6 +88,7 @@ class Node2Vec(BaseNodeEmbedder):
             Can be any graph type that's supported by csrgraph library
             (NetworkX, numpy 2d array, scipy CSR matrix, CSR matrix components)
         """
+        self.n_nodes = G.number_of_nodes()
         if not isinstance(G, cg.csrgraph):
             G = cg.csrgraph(G, threads=self.threads)
         if G.threads != self.threads:
@@ -95,14 +96,14 @@ class Node2Vec(BaseNodeEmbedder):
         # Because networkx graphs are actually iterables of their nodes
         #   we do list(G) to avoid networkx 1.X vs 2.X errors
         node_names = G.names
-        if type(node_names[0]) not in [int, str, np.int32, np.uint32, 
+        if type(node_names[0]) not in [int, str, np.int32, np.uint32,
                                        np.int64, np.uint64]:
             raise ValueError("Graph node names must be int or str!")
         # Adjacency matrix
         walks_t = time.time()
         if self.verbose:
             print("Making walks...", end=" ")
-        self.walks = G.random_walks(walklen=self.walklen, 
+        self.walks = G.random_walks(walklen=self.walklen,
                                     epochs=self.epochs,
                                     return_weight=self.return_weight,
                                     neighbor_weight=self.neighbor_weight)
@@ -154,7 +155,7 @@ class Node2Vec(BaseNodeEmbedder):
               .values)
         )
         return w
-    
+
     def predict(self, node_name):
         """
         Return vector associated with node
